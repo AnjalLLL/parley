@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Voxwire Agents</title>
+<style>
+  :root { --bg: #0B1120; --surface: #111a2e; --border: #26324a; --fg: #F8FAFC; --muted: #A0AEC4; --accent: #22C55E; }
+  body { margin: 0; font-family: system-ui, sans-serif; background: var(--bg); color: var(--fg); display: grid; place-items: center; min-height: 100vh; padding: 16px; box-sizing: border-box; }
+  main { width: 100%; max-width: 420px; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 24px; display: grid; gap: 14px; }
+  h1 { font-size: 20px; margin: 0; }
+  label { display: grid; gap: 6px; color: var(--muted); font-size: 14px; }
+  select, button { min-height: 44px; border-radius: 10px; font: inherit; }
+  select { background: var(--bg); color: var(--fg); border: 1px solid var(--border); padding: 0 10px; }
+  button { border: 0; background: var(--accent); color: #0F172A; font-weight: 600; cursor: pointer; }
+  button.secondary { background: transparent; color: var(--fg); border: 1px solid var(--border); }
+  button:disabled { opacity: .5; cursor: not-allowed; }
+  .row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  #status { color: var(--muted); min-height: 1.5em; margin: 0; }
+  :focus-visible { outline: 2px solid var(--fg); outline-offset: 2px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Talk to an AI agent</h1>
+  <label>Agent
+    <select id="agent">
+      <option value="support">Support bot</option>
+      <option value="tutor">Spanish tutor</option>
+      <option value="receptionist">Dental receptionist (books appointments)</option>
+    </select>
+  </label>
+  <button id="start">Start call</button>
+  <div class="row">
+    <button id="mute" class="secondary" disabled aria-pressed="false">Mute</button>
+    <button id="hangup" class="secondary" disabled>Hang up</button>
+  </div>
+  <p id="status" role="status">Ready</p>
+  <audio id="ai" autoplay></audio>
+</main>
+<script type="module">
+  import { connect } from '/sdk/index.js';  // in your app: import { connect } from 'voxwire'
+  const $ = id => document.getElementById(id);
+  let call;
+
+  $('start').onclick = async () => {
+    $('start').disabled = true;
+    $('status').textContent = 'Connecting…';
+    try {
+      const session = await fetch('/start', { method: 'POST', body: JSON.stringify({ agent: $('agent').value }) }).then(r => r.json());
+      call = await connect(session.signaling_url, { iceServers: session.ice_servers });
+      $('ai').srcObject = call.remoteStream;
+      $('mute').disabled = $('hangup').disabled = false;
+      $('status').textContent = 'Live: start talking';
+      call.on('ended', ({ reason }) => reset('Call ended: ' + reason));
+    } catch (e) {
+      reset('Could not start: ' + e.message);
+    }
+  };
+  $('mute').onclick = () => {
+    const muted = call.mute();
+    $('mute').textContent = muted ? 'Unmute' : 'Mute';
+    $('mute').setAttribute('aria-pressed', String(muted));
+  };
+  $('hangup').onclick = () => call.hangup();
+
+  function reset(msg) {
+    $('status').textContent = msg;
+    $('start').disabled = false;
+    $('mute').disabled = $('hangup').disabled = true;
+    $('mute').textContent = 'Mute';
+  }
+</script>
+</body>
+</html>

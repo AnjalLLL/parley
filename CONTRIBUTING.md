@@ -20,7 +20,9 @@ To work outside Docker:
 
 ```bash
 cd python && uv sync --extra server && uv run pytest && uv run ruff check
+cd js && npm test
 cd sfu && go vet ./... && go test ./...     # needs libopus (brew install opus / apt install libopus-dev)
+uvx --with mkdocs-material mkdocs serve      # preview the docs
 ```
 
 ## Pull requests
@@ -34,8 +36,8 @@ Commit messages should be short and written in the imperative mood ("Fix resampl
 
 ## Releasing (maintainers)
 
-1. Bump `__version__` in `python/src/voxwire/__init__.py`, and move the `[Unreleased]` notes in the changelog under the new version.
+1. Bump `__version__` in `python/src/voxwire/__init__.py` **and** `version` in `js/package.json` (they must match the tag), and move the `[Unreleased]` notes in the changelog under the new version.
 2. Commit, then tag and push: `git tag v0.2.0 && git push origin v0.2.0`.
-3. The `release` workflow publishes the package to PyPI, pushes both Docker images to GHCR, and creates a GitHub release.
+3. The `release` workflow publishes to PyPI and npm, pushes both Docker images to GHCR, and creates a GitHub release.
 
 By contributing, you agree that your contributions are licensed under the [Apache-2.0 License](LICENSE).

@@ -292,7 +292,14 @@
       watch('me', localStream);
 
       setState('Connecting…', 'Negotiating a WebRTC session', 'warn', 'connecting');
-      ws = new WebSocket(WS_BASE + crypto.randomUUID());
+      // Demo only: creating sessions from the browser works when the server runs without API keys (dev mode).
+      // In a real app your backend creates the session and hands the browser its signaling_url.
+      const res = await fetch(BACKEND.replace(/^ws/, 'http') + '/api/session', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}'
+      });
+      if (!res.ok) throw new Error('session create failed: ' + res.status);
+      const session = await res.json();
+      ws = new WebSocket(WS_BASE + session.session_id + '?token=' + encodeURIComponent(session.token));
       ws.onmessage = handleSignalingMessage;
       ws.onopen = initWebRTC;
       ws.onerror = () => stopCall('Could not reach the server', 'err');

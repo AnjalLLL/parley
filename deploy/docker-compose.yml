@@ -1,7 +1,11 @@
 # Production / self-host: runs the published images, no source checkout needed.
 #   curl -O https://raw.githubusercontent.com/AnjalLLL/voxwire/main/deploy/docker-compose.yml
-#   echo "GEMINI_API_KEY=..." > .env && echo "PION_PUBLIC_IP=<your public ip>" >> .env
-#   docker compose up -d
+#   (also grab Caddyfile / turnserver.conf / prometheus.yml if you use those profiles)
+#   printf "GEMINI_API_KEY=...\nPION_PUBLIC_IP=<public ip>\nVOXWIRE_API_KEYS=<key>\nVOXWIRE_SECRET=$(openssl rand -hex 32)\n" > .env
+#   docker compose up -d                                   # server + sfu
+#   DOMAIN=voice.example.com docker compose --profile https up -d   # + automatic HTTPS (Caddy)
+#   docker compose --profile turn up -d                    # + TURN server (set TURN_SECRET in .env)
+#   docker compose --profile monitoring up -d              # + Prometheus + Grafana (:3001)
 services:
   server:
     image: ghcr.io/anjallll/voxwire-server:${VOXWIRE_VERSION:-latest}
@@ -10,6 +14,10 @@ services:
     env_file: .env
     environment:
       - PION_GRPC_URL=sfu:50051
+      - DATA_DIR=/data
+      - RECORDINGS_DIR=${RECORDINGS_DIR:-}
+    volumes:
+      - voxwire-data:/data
     depends_on: [sfu]
 
   sfu:
@@ -19,3 +27,44 @@ services:
       - "5000-5100:5000-5100/udp"
     environment:
       - PION_PUBLIC_IP=${PION_PUBLIC_IP:?set PION_PUBLIC_IP in .env}
+
+  caddy:
+    profiles: [https]
+    image: caddy:2
+    restart: unless-stopped
+    ports: ["80:80", "443:443"]
+    environment:
+      - DOMAIN=${DOMAIN:-}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+    depends_on: [server]
+
+  turn:
+    profiles: [turn]
+    image: coturn/coturn:4.6
+    restart: unless-stopped
+    network_mode: host  # TURN needs a wide UDP relay range; host networking avoids mapping it
+    command: ["-c", "/etc/turnserver.conf", "--static-auth-secret=${TURN_SECRET:-}",
+              "--external-ip=${PION_PUBLIC_IP}"]
+    volumes:
+      - ./turnserver.conf:/etc/turnserver.conf:ro
+
+  prometheus:
+    profiles: [monitoring]
+    image: prom/prometheus:v2.55.1
+    restart: unless-stopped
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    depends_on: [server]
+
+  grafana:
+    profiles: [monitoring]
+    image: grafana/grafana:11.3.0
+    restart: unless-stopped
+    ports: ["3001:3000"]
+    depends_on: [prometheus]
+
+volumes:
+  voxwire-data:
+  caddy-data:

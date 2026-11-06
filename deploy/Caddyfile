@@ -1,0 +1,6 @@
+# Automatic HTTPS for the API and signaling WebSocket. /metrics stays internal.
+{$DOMAIN} {
+	@metrics path /metrics
+	respond @metrics 404
+	reverse_proxy server:8000
+}

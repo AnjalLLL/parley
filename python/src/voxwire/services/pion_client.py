@@ -10,20 +10,22 @@ class PionClient:
     def __init__(self):
         self.channel = grpc.aio.insecure_channel(settings.PION_GRPC_URL)
         self.stub = sfu_pb2_grpc.SFUServiceStub(self.channel)
+        # Unary calls only; the audio streams live as long as the call.
+        self.timeout = settings.SFU_TIMEOUT_SECONDS
 
     async def create_session(self, session_id: str):
         req = sfu_pb2.CreateSessionRequest(session_id=session_id)
-        return await self.stub.CreateSession(req)
+        return await self.stub.CreateSession(req, timeout=self.timeout)
 
     async def process_offer(self, session_id: str, sdp: str) -> str:
         req = sfu_pb2.OfferRequest(session_id=session_id, sdp=sdp)
-        res = await self.stub.ProcessOffer(req)
+        res = await self.stub.ProcessOffer(req, timeout=self.timeout)
         return res.sdp
 
     async def add_ice_candidate(self, session_id: str, candidate: dict):
         candidate_json = json.dumps(candidate)
         req = sfu_pb2.IceCandidateRequest(session_id=session_id, candidate_json=candidate_json)
-        await self.stub.AddIceCandidate(req)
+        await self.stub.AddIceCandidate(req, timeout=self.timeout)
 
     async def stream_audio_to_pion(self, session_id: str, pcm_stream, sample_rate: int):
         """Send TTS/AI PCM audio to Pion for WebRTC playback"""
@@ -50,7 +52,7 @@ class PionClient:
 
     async def end_session(self, session_id: str):
         try:
-            await self.stub.EndSession(sfu_pb2.SessionID(session_id=session_id))
+            await self.stub.EndSession(sfu_pb2.SessionID(session_id=session_id), timeout=self.timeout)
         except Exception as e:
             logger.error(f"Error ending Pion session: {e}")
 

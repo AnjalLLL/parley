@@ -36,16 +36,23 @@ class VoxwireClient:
     def health(self) -> dict:
         return self._request("GET", "/api/health")
 
-    def create_session(self, system_prompt: Optional[str] = None) -> dict:
-        """Returns {"session_id", "signaling_url"}; the browser connects to signaling_url."""
-        session = self._request("POST", "/api/session", {"system_prompt": system_prompt})
-        session["signaling_url"] = self.signaling_url(session["session_id"])
+    def create_session(self, system_prompt: Optional[str] = None, **options) -> dict:
+        """Create a call. options: voice, model, ttl_seconds, metadata.
+
+        Returns the session plus `token` and `signaling_url`; give signaling_url to the browser.
+        """
+        session = self._request("POST", "/api/session", {"system_prompt": system_prompt, **options})
+        session["signaling_url"] = self.signaling_url(session["session_id"], session.get("token"))
         return session
+
+    def get_session(self, session_id: str) -> dict:
+        return self._request("GET", f"/api/session/{session_id}")
 
     def end_session(self, session_id: str) -> dict:
         return self._request("DELETE", f"/api/session/{session_id}")
 
-    def signaling_url(self, session_id: str) -> str:
+    def signaling_url(self, session_id: str, token: Optional[str] = None) -> str:
         scheme, _, host = self.base_url.partition("://")
         ws = ("wss://" if scheme == "https" else "ws://") + host
-        return f"{ws}/ws/signaling/{session_id}"
+        url = f"{ws}/ws/signaling/{session_id}"
+        return f"{url}?token={token}" if token else url

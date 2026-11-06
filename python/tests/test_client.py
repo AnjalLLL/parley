@@ -11,7 +11,7 @@ class _Handler(BaseHTTPRequestHandler):
     def do_POST(self):
         body = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
         assert self.headers["Authorization"] == "Bearer k"
-        self._send(200, {"session_id": "abc", "prompt": body["system_prompt"]})
+        self._send(200, {"session_id": "abc", "token": "t1", "prompt": body["system_prompt"]})
 
     def do_GET(self):
         self._send(500, {"detail": "boom"})
@@ -36,7 +36,7 @@ def server():
 def test_create_session_adds_signaling_url(server):
     s = VoxwireClient(server, api_key="k").create_session("be nice")
     assert s["session_id"] == "abc" and s["prompt"] == "be nice"
-    assert s["signaling_url"] == server.replace("http://", "ws://") + "/ws/signaling/abc"
+    assert s["signaling_url"] == server.replace("http://", "ws://") + "/ws/signaling/abc?token=t1"
 
 
 def test_errors_raise(server):

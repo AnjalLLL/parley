@@ -12,8 +12,26 @@ jobs:
       - uses: astral-sh/setup-uv@v6
       - run: uv sync --extra server
       - run: uv run ruff check
-      - run: uv run pytest -q
+      - run: uv run pytest -q --cov=voxwire --cov-report=term
       - run: uv build
+
+  js:
+    runs-on: ubuntu-latest
+    defaults: { run: { working-directory: js } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - run: npm test
+      - run: npm pack --dry-run
+
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - run: uvx --with mkdocs-material==9.8.0 mkdocs build --strict
+        env: { NO_MKDOCS_2_WARNING: "1" }
 
   sfu:
     runs-on: ubuntu-latest

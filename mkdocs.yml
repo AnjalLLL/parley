@@ -1,0 +1,37 @@
+site_name: Voxwire
+site_description: Self-hostable real-time voice AI calls over WebRTC
+site_url: https://anjallll.github.io/voxwire/
+repo_url: https://github.com/AnjalLLL/voxwire
+edit_uri: edit/main/docs/
+theme:
+  name: material
+  palette:
+    - scheme: slate
+      primary: green
+      accent: green
+      toggle: { icon: material/brightness-4, name: Light mode }
+    - scheme: default
+      primary: green
+      accent: green
+      toggle: { icon: material/brightness-7, name: Dark mode }
+  features: [content.code.copy, navigation.sections, search.suggest]
+markdown_extensions:
+  - admonition
+  - tables
+  - pymdownx.highlight
+  - pymdownx.superfences
+nav:
+  - Home: index.md
+  - Quickstart: quickstart.md
+  - How it works: concepts.md
+  - Guides:
+      - Tools and webhooks: tools-and-webhooks.md
+      - Phone calls: phone.md
+      - Dashboard and usage: dashboard.md
+      - Self-hosting: self-hosting.md
+  - Reference:
+      - REST API: api.md
+      - WebSocket protocol: protocol.md
+      - Python SDK: python-sdk.md
+      - JavaScript SDK: js-sdk.md
+      - Configuration: configuration.md
