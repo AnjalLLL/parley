@@ -12,7 +12,12 @@ You can use it in three ways:
 |---|---|
 | Run the whole stack yourself | Docker images: [`deploy/docker-compose.yml`](deploy/docker-compose.yml) |
 | Create calls from your own backend | `pip install voxwire`, then `VoxwireClient` |
+| Connect from the browser | `npm i voxwire`, then `connect(signalingUrl)` |
 | Hack on or embed the server | `pip install "voxwire[server]"`, then `voxwire serve` |
+
+**Features:** Gemini Live or OpenAI Realtime · tool calling through signed webhooks · transcripts and recordings · call events · phone calls through Twilio · call log, usage numbers and a dashboard · API keys, call tokens and limits · TURN, HTTPS and monitoring deploy profiles.
+
+📖 **Docs:** https://anjallll.github.io/voxwire/ · 🧪 **Example:** [`examples/voice-agents`](examples/voice-agents)
 
 ## Architecture
 
@@ -26,7 +31,10 @@ Browser ──WebRTC/Opus──▶ SFU (Go, Pion) ──gRPC PCM 16k──▶ Se
 |---|---|---|
 | [`python/`](python) | Signaling server, audio pipeline, Python client + CLI | PyPI `voxwire`, image `ghcr.io/anjallll/voxwire-server` |
 | [`sfu/`](sfu) | Pion SFU: WebRTC peers, Opus decode/encode, resampling | image `ghcr.io/anjallll/voxwire-sfu` |
-| [`web/`](web) | Static landing page and browser call demo | static site |
+| [`js/`](js) | Browser SDK | npm `voxwire` |
+| [`web/`](web) | Landing page, browser call demo, and `dashboard.html` | static site |
+| [`docs/`](docs) | Documentation site | GitHub Pages |
+| [`examples/`](examples) | Example apps | n/a |
 | [`deploy/`](deploy) | Production compose file using the published images | n/a |
 
 ## Quickstart (self-host)
@@ -77,7 +85,9 @@ Run the tests:
 
 ```bash
 cd python && uv sync --extra server && uv run pytest
+cd js && npm test
 cd sfu && go test ./...
+uvx --with mkdocs-material mkdocs serve      # docs at http://localhost:8000
 ```
 
 Regenerate the gRPC stubs after you edit `sfu/grpc/proto/sfu.proto`:

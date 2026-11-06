@@ -14,6 +14,18 @@ All notable changes are recorded here. The format follows [Keep a Changelog](htt
 - `VoxwireClient.get_session()`, and `create_session(**options)`.
 - Tests for the API, auth, the pipeline (echo) and the SFU session lifecycle.
 
+- Providers: choose `gemini`, `openai` (OpenAI Realtime) or `echo` per session. Also `voice` and `model`.
+- Tool calling: `tools` + `tool_webhook_url`. The AI calls your backend mid-call through signed webhooks.
+- Live transcripts (`GET /api/session/{id}/transcript`) and optional WAV recordings (`record`, `RECORDINGS_DIR`).
+- Call events `call.started`, `call.ended` and `transcript.ready`, signed and retried.
+- Phone calls through Twilio Media Streams: inbound `/twilio/voice`, outbound `POST /api/call`.
+- SQLite call log, plus `GET /api/sessions` and `GET /api/usage`. Each API key only sees its own calls.
+- Dashboard (`web/dashboard.html`): usage, calls, transcripts, recordings.
+- Time-limited TURN credentials (`TURN_SECRET`). Session create returns `ice_servers`.
+- Deploy profiles: `https` (Caddy), `turn` (coturn), `monitoring` (Prometheus + Grafana).
+- Browser SDK on npm: `npm i voxwire`.
+- Docs site (MkDocs), the `examples/voice-agents` example, and `scripts/loadtest.py`.
+
 ### Changed
 - **Breaking:** the signaling WebSocket now requires a session created through `POST /api/session` and its `?token=`. Random session IDs are rejected.
 - `/api/health` no longer exposes the SFU address. It now returns `version` and `active_calls`.

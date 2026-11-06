@@ -18,6 +18,23 @@ jobs:
       - uses: pypa/gh-action-pypi-publish@release/v1
         with: { packages-dir: python/dist }
 
+  npm:
+    runs-on: ubuntu-latest
+    environment: npm
+    permissions: { contents: read, id-token: write }  # npm trusted publishing + provenance
+    defaults: { run: { working-directory: js } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, registry-url: "https://registry.npmjs.org" }
+      - name: Tag must match package version
+        run: test "v$(node -p 'require("./package.json").version')" = "${GITHUB_REF_NAME}"
+      - run: npm install -g npm@latest  # trusted publishing needs npm >= 11.5
+      - run: npm test
+      - run: npm publish --provenance --access public
+        # npm can't enable trusted publishing until the package exists, so the first release uses a token.
+        env: { NODE_AUTH_TOKEN: "${{ secrets.NPM_TOKEN }}" }
+
   images:
     runs-on: ubuntu-latest
     permissions: { contents: read, packages: write }
@@ -48,7 +65,7 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
 
   github-release:
-    needs: [pypi, images]
+    needs: [pypi, npm, images]
     runs-on: ubuntu-latest
     permissions: { contents: write }
     steps:
