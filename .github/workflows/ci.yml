@@ -8,7 +8,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults: { run: { working-directory: python } }
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: astral-sh/setup-uv@v6
       - run: uv sync --extra server
       - run: uv run ruff check
@@ -19,7 +19,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults: { run: { working-directory: js } }
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-node@v4
         with: { node-version: 22 }
       - run: npm test
@@ -28,7 +28,7 @@ jobs:
   docs:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: astral-sh/setup-uv@v6
       - run: uvx --with mkdocs-material==9.8.0 mkdocs build --strict
         env: { NO_MKDOCS_2_WARNING: "1" }
@@ -36,6 +36,6 @@ jobs:
   sfu:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       # Dockerfile runs protoc, go vet and go test, so building it is the check.
       - run: docker build sfu
