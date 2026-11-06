@@ -235,7 +235,8 @@ def test_twilio_inbound_and_media_echo(client, monkeypatch):
 
     with client.websocket_connect(f"/twilio/stream/{sid}") as ws:
         ws.send_text(json.dumps({"event": "connected"}))
-        ws.send_text(json.dumps({"event": "start", "start": {"streamSid": "MZ1", "customParameters": {"token": token}}}))
+        start = {"streamSid": "MZ1", "customParameters": {"token": token}}
+        ws.send_text(json.dumps({"event": "start", "start": start}))
         ws.send_text(json.dumps({"event": "media", "media": {"payload": base64.b64encode(b"\xff" * 160).decode()}}))
         out = ws.receive_json()  # echo mode plays the caller back
         assert out["event"] == "media" and out["streamSid"] == "MZ1"

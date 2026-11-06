@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Voxwire Dashboard</title>
+<meta name="description" content="Calls, usage, transcripts and recordings for a Voxwire server.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0B1120; --surface: #111a2e; --surface-2: #1B2336; --border: #26324a;
+    --fg: #F8FAFC; --muted: #A0AEC4; --accent: #22C55E; --accent-ink: #0F172A;
+    --danger: #EF4444; --warn: #F59E0B; --ring: #F8FAFC;
+    --mono: 'JetBrains Mono', ui-monospace, monospace; --r: 12px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'IBM Plex Sans', system-ui, sans-serif; background: var(--bg); color: var(--fg); line-height: 1.5; font-size: 15px; }
+  .wrap { max-width: 1160px; margin: 0 auto; padding: 0 16px; }
+  :focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; border-radius: 6px; }
+  header { border-bottom: 1px solid var(--border); }
+  .nav { display: flex; align-items: center; justify-content: space-between; height: 60px; gap: 12px; }
+  .brand { font-weight: 700; display: flex; gap: 10px; align-items: center; }
+  .mark { width: 28px; height: 28px; border-radius: 8px; background: var(--accent); color: var(--accent-ink); display: grid; place-items: center; font-weight: 700; }
+  a { color: var(--muted); }
+  main { padding: 24px 0 48px; display: grid; gap: 20px; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); padding: 16px; }
+  form { display: grid; grid-template-columns: 1fr 1fr auto; gap: 10px; align-items: end; }
+  label { display: grid; gap: 4px; font-size: 13px; color: var(--muted); }
+  input { background: var(--bg); color: var(--fg); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; font: inherit; min-height: 44px; }
+  .btn { min-height: 44px; padding: 0 18px; border-radius: 10px; border: 0; background: var(--accent); color: var(--accent-ink); font: inherit; font-weight: 600; cursor: pointer; }
+  .btn.ghost { background: var(--surface-2); color: var(--fg); border: 1px solid var(--border); }
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+  .stat .v { font-size: 28px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .stat .k { color: var(--muted); font-size: 13px; }
+  h2 { font-size: 16px; margin-bottom: 12px; }
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { text-align: left; padding: 10px 8px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+  th { color: var(--muted); font-weight: 500; }
+  tbody tr { cursor: pointer; }
+  tbody tr:hover, tbody tr[aria-selected="true"] { background: var(--surface-2); }
+  .mono { font-family: var(--mono); font-size: 13px; }
+  .pill { padding: 2px 8px; border-radius: 99px; font-size: 12px; background: var(--surface-2); }
+  .pill.active { background: rgba(34,197,94,.15); color: var(--accent); }
+  .bars { display: flex; align-items: flex-end; gap: 3px; height: 80px; }
+  .bars i { flex: 1; background: var(--accent); border-radius: 3px 3px 0 0; min-height: 2px; opacity: .85; }
+  .muted { color: var(--muted); }
+  .err { color: var(--danger); }
+  .turn { margin: 8px 0; }
+  .turn b { color: var(--muted); font-weight: 500; margin-right: 6px; }
+  audio { width: 100%; margin-top: 8px; }
+  @media (max-width: 720px) {
+    form { grid-template-columns: 1fr; }
+    .stats { grid-template-columns: repeat(2, 1fr); }
+  }
+</style>
+</head>
+<body>
+<header><div class="wrap nav">
+  <div class="brand"><span class="mark" aria-hidden="true">V</span>Voxwire Dashboard</div>
+  <a href="index.html">Home</a>
+</div></header>
+
+<main class="wrap">
+  <section class="card" aria-label="Connection">
+    <form id="conn">
+      <label>Server URL <input id="url" type="url" required placeholder="http://localhost:8000"></label>
+      <label>API key <input id="key" type="password" autocomplete="off" placeholder="leave empty in dev mode"></label>
+      <button class="btn" type="submit">Connect</button>
+    </form>
+    <p id="msg" class="muted" role="status" style="margin-top:8px"></p>
+  </section>
+
+  <section class="stats" aria-label="Usage, last 30 days">
+    <div class="card stat"><div class="v" id="sCalls">–</div><div class="k">Calls (30 days)</div></div>
+    <div class="card stat"><div class="v" id="sMin">–</div><div class="k">Minutes (30 days)</div></div>
+    <div class="card stat"><div class="v" id="sActive">–</div><div class="k">Active now</div></div>
+    <div class="card stat"><div class="v" id="sVer">–</div><div class="k">Server version</div></div>
+  </section>
+
+  <section class="card">
+    <h2>Minutes per day</h2>
+    <div class="bars" id="bars" role="img" aria-label="Minutes per day chart"></div>
+  </section>
+
+  <section class="card">
+    <h2>Calls <button class="btn ghost" id="refresh" type="button" style="float:right;min-height:32px">Refresh</button></h2>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Started</th><th>Status</th><th>Channel</th><th>Provider</th><th>Duration</th><th>End reason</th><th>Session</th></tr></thead>
+      <tbody id="rows"><tr><td colspan="7" class="muted">Connect to a server to see calls.</td></tr></tbody>
+    </table></div>
+  </section>
+
+  <section class="card" id="detail" hidden>
+    <h2>Call <span class="mono" id="dId"></span></h2>
+    <div id="dMeta" class="mono muted"></div>
+    <div id="dTranscript" style="margin-top:12px"></div>
+    <div id="dRec"></div>
+  </section>
+</main>
+
+<script>
+  const $ = id => document.getElementById(id);
+  const store = { get: k => { try { return localStorage.getItem(k) || ''; } catch { return ''; } },
+                  set: (k, v) => { try { localStorage.setItem(k, v); } catch {} } };
+  $('url').value = store.get('vx.url') || 'http://localhost:8000';
+  $('key').value = sessionStorage.getItem?.('vx.key') || '';  // key only for this tab
+
+  const base = () => $('url').value.replace(/\/$/, '');
+  const headers = () => $('key').value ? { Authorization: 'Bearer ' + $('key').value } : {};
+  async function api(path) {
+    const r = await fetch(base() + path, { headers: headers() });
+    if (!r.ok) throw new Error(`${r.status} ${(await r.text()).slice(0, 120)}`);
+    return r;
+  }
+  const el = (tag, text, cls) => { const e = document.createElement(tag); if (text != null) e.textContent = text; if (cls) e.className = cls; return e; };
+  const fmtTime = t => t ? new Date(t * 1000).toLocaleString() : '–';
+  const fmtDur = s => s ? `${Math.floor(s / 60)}m ${Math.round(s % 60)}s` : '–';
+
+  async function load() {
+    $('msg').className = 'muted'; $('msg').textContent = 'Loading…';
+    try {
+      const [health, usage, list] = await Promise.all([
+        api('/api/health').then(r => r.json()), api('/api/usage').then(r => r.json()), api('/api/sessions').then(r => r.json()),
+      ]);
+      $('sCalls').textContent = usage.calls; $('sMin').textContent = usage.minutes;
+      $('sActive').textContent = usage.active_calls; $('sVer').textContent = health.version;
+      const max = Math.max(1, ...usage.per_day.map(d => d.minutes || 0));
+      $('bars').replaceChildren(...usage.per_day.map(d => {
+        const b = el('i'); b.style.height = (100 * (d.minutes || 0) / max) + '%'; b.title = `${d.day}: ${d.minutes} min, ${d.calls} calls`; return b;
+      }));
+      const calls = [...list.active, ...list.recent];
+      $('rows').replaceChildren(...(calls.length ? calls.map(row) : [Object.assign(el('tr'), { innerHTML: '<td colspan="7" class="muted">No calls yet.</td>' })]));
+      $('msg').textContent = `Connected · ${calls.length} calls`;
+    } catch (e) {
+      $('msg').className = 'err'; $('msg').textContent = 'Could not load: ' + e.message;
+    }
+  }
+
+  function row(c) {
+    const tr = el('tr');
+    tr.tabIndex = 0;
+    const status = el('span', c.status, 'pill' + (c.status === 'active' ? ' active' : ''));
+    const cells = [fmtTime(c.started_at || c.created_at), status, c.channel || '–', c.provider || '–',
+                   fmtDur(c.duration_seconds), c.end_reason || '–', c.session_id.slice(0, 8)];
+    cells.forEach((v, i) => { const td = el('td', typeof v === 'string' ? v : null, i === 6 ? 'mono' : ''); if (typeof v !== 'string') td.append(v); tr.append(td); });
+    const open = () => { document.querySelectorAll('tbody tr').forEach(r => r.removeAttribute('aria-selected')); tr.setAttribute('aria-selected', 'true'); detail(c.session_id); };
+    tr.onclick = open; tr.onkeydown = e => { if (e.key === 'Enter') open(); };
+    return tr;
+  }
+
+  async function detail(id) {
+    $('detail').hidden = false; $('dId').textContent = id;
+    const [s, t] = await Promise.all([api('/api/session/' + id).then(r => r.json()), api(`/api/session/${id}/transcript`).then(r => r.json())]);
+    $('dMeta').textContent = JSON.stringify(s.metadata || {});
+    $('dTranscript').replaceChildren(...(t.transcript.length ? t.transcript.map(x => {
+      const p = el('p', null, 'turn'); p.append(el('b', x.role === 'ai' ? 'AI' : 'Caller'), x.text); return p;
+    }) : [el('p', 'No transcript.', 'muted')]));
+    $('dRec').replaceChildren();
+    for (const side of ['user', 'ai']) {  // fetch with the auth header, then play from a blob URL
+      try {
+        const blob = await (await api(`/api/session/${id}/recording/${side}`)).blob();
+        const a = el('audio'); a.controls = true; a.src = URL.createObjectURL(blob); a.setAttribute('aria-label', side + ' recording');
+        $('dRec').append(el('p', side === 'ai' ? 'AI audio' : 'Caller audio', 'muted'), a);
+      } catch { /* no recording for this call */ }
+    }
+  }
+
+  $('conn').onsubmit = e => { e.preventDefault(); store.set('vx.url', $('url').value); try { sessionStorage.setItem('vx.key', $('key').value); } catch {} load(); };
+  $('refresh').onclick = load;
+  if (store.get('vx.url')) load();
+</script>
+</body>
+</html>

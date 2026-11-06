@@ -37,3 +37,7 @@ build/
 .pytest_cache/
 .ruff_cache/
 .coverage
+
+# Voxwire runtime data
+data/
+recordings/

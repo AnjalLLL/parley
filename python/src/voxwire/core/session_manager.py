@@ -10,6 +10,7 @@ from dataclasses import dataclass, field
 from typing import Any, Optional
 
 from voxwire.core.config import SECRET, settings
+from voxwire.core import store
 from voxwire.services import webhooks
 
 
@@ -94,6 +95,9 @@ class SessionManager:
             return None
         return s
 
+    def all(self) -> list[Session]:
+        return list(self._sessions.values())
+
     def active_count(self) -> int:
         return sum(1 for s in self._sessions.values() if s.status == "active")
 
@@ -117,6 +121,7 @@ class SessionManager:
         s.ended_at = time.time()
         was_active = s.status == "active"
         s.status, s.ws = "ended", None
+        store.save(s)
         if was_active:
             self.call_seconds_sum += s.duration
             webhooks.send_event(s.webhook_url, "call.ended", s.public())
