@@ -30,6 +30,6 @@ func (s *Session) HandleIncomingAudio(track *webrtc.TrackRemote) {
 		if err != nil {
 			pcm16 = pcm48 // Fallback
 		}
-		s.pcmInChan <- pcm16
+		s.PushUserAudio(pcm16)
 	}
 }

@@ -3,8 +3,10 @@ package grpc
 import (
 	"context"
 	"io"
-	"log"
 	"sync"
+
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	"ai-call-pion/sfu"
 	pb "ai-call-pion/grpc/proto" // This assumes the generated code is here
@@ -26,8 +28,10 @@ func (s *Server) CreateSession(ctx context.Context, req *pb.CreateSessionRequest
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	session := sfu.NewSession(req.SessionId)
-	s.sessions[req.SessionId] = session
+	if old, ok := s.sessions[req.SessionId]; ok {
+		old.Close()
+	}
+	s.sessions[req.SessionId] = sfu.NewSession(req.SessionId)
 
 	return &pb.CreateSessionResponse{SessionId: req.SessionId}, nil
 }
@@ -38,7 +42,7 @@ func (s *Server) ProcessOffer(ctx context.Context, req *pb.OfferRequest) (*pb.An
 	s.mu.RUnlock()
 
 	if !ok {
-		return nil, nil // TODO: return error
+		return nil, status.Errorf(codes.NotFound, "session %s not found", req.SessionId)
 	}
 
 	answer, err := session.ProcessOffer(req.Sdp)
@@ -75,7 +79,7 @@ func (s *Server) StreamAudioToPion(stream pb.SFUService_StreamAudioToPionServer)
 		s.mu.RUnlock()
 
 		if ok {
-			session.PlayAudio(chunk.PcmData)
+			session.PlayAudio(chunk.PcmData, int(chunk.SampleRate))
 		}
 	}
 }
@@ -86,21 +90,23 @@ func (s *Server) StreamAudioFromPion(req *pb.SessionID, stream pb.SFUService_Str
 	s.mu.RUnlock()
 
 	if !ok {
-		return nil
+		return status.Errorf(codes.NotFound, "session %s not found", req.SessionId)
 	}
 
 	pcmChan := session.GetAudioStream()
-	for pcm := range pcmChan {
-		err := stream.Send(&pb.AudioChunk{
-			SessionId: req.SessionId,
-			PcmData:   pcm,
-			SampleRate: 16000,
-		})
-		if err != nil {
-			return err
+	for {
+		select {
+		case <-session.Done():
+			return nil
+		case <-stream.Context().Done():
+			return nil
+		case pcm := <-pcmChan:
+			err := stream.Send(&pb.AudioChunk{SessionId: req.SessionId, PcmData: pcm, SampleRate: 16000})
+			if err != nil {
+				return err
+			}
 		}
 	}
-	return nil
 }
 
 func (s *Server) EndSession(ctx context.Context, req *pb.SessionID) (*pb.Empty, error) {

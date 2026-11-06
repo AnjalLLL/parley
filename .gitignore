@@ -28,3 +28,4 @@ pion_service/bin/
 # OS
 .DS_Store
 Thumbs.db
+.impeccable/

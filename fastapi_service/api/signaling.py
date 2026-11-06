@@ -26,7 +26,7 @@ async def signaling(websocket: WebSocket, session_id: str):
             msg = json.loads(raw)
             logger.debug(f"Received message: {msg['type']}")
 
-            if msg["type"] == "offer":
+            if msg["type"] == "offer" and pipeline is None:
                 answer_sdp = await pion.process_offer(session_id, msg["sdp"])
                 await websocket.send_json({"type": "answer", "sdp": answer_sdp})
                 

@@ -25,14 +25,14 @@ class PionClient:
         req = sfu_pb2.IceCandidateRequest(session_id=session_id, candidate_json=candidate_json)
         await self.stub.AddIceCandidate(req)
 
-    async def stream_audio_to_pion(self, session_id: str, pcm_stream):
+    async def stream_audio_to_pion(self, session_id: str, pcm_stream, sample_rate: int):
         """Send TTS/AI PCM audio to Pion for WebRTC playback"""
         async def request_generator():
             async for chunk in pcm_stream:
                 yield sfu_pb2.AudioChunk(
                     session_id=session_id,
                     pcm_data=chunk,
-                    sample_rate=24000
+                    sample_rate=sample_rate
                 )
         try:
             await self.stub.StreamAudioToPion(request_generator())

@@ -13,7 +13,7 @@ async def test_gemini_connectivity():
         return
 
     client = genai.Client(api_key=api_key, http_options={"api_version": "v1beta"})
-    model = os.getenv("GEMINI_MODEL", "gemini-2.0-flash-exp")
+    model = os.getenv("GEMINI_MODEL", "gemini-2.5-flash-native-audio-preview-09-2025")
 
     print(f"Connecting to Gemini ({model})...")
     try:
@@ -25,7 +25,7 @@ async def test_gemini_connectivity():
             
             # Send a simple text message to trigger a response
             print("Sending 'Hello'...")
-            await session.send(input={"text": "Hello, this is a connectivity test."}, end_of_turn=True)
+            await session.send_client_content(turns={"role": "user", "parts": [{"text": "Hello, this is a connectivity test."}]}, turn_complete=True)
             
             async for message in session.receive():
                 if message.data:

@@ -35,7 +35,7 @@ RUN protoc --go_out=. --go_opt=paths=source_relative \
     grpc/proto/sfu.proto
 
 # Build the application
-RUN go build -o pion-sfu .
+RUN go vet ./... && go test ./... && go build -o pion-sfu .
 
 FROM alpine:latest
 # Install runtime libraries
