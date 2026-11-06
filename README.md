@@ -1,6 +1,6 @@
-# AI Video Call Microservice
+# Parley
 
-This microservice provides a complete pipeline for AI-powered video/audio calls using FastAPI, Pion SFU, and the Gemini Live API.
+Open-source, self-hostable real-time voice AI calls. Parley provides a complete pipeline for AI-powered video/audio calls using FastAPI, Pion SFU, and the Gemini Live API.
 
 ## Architecture
 

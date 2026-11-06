@@ -11,7 +11,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-app = FastAPI(title="AI Video Call Microservice")
+app = FastAPI(title="Parley")
 
 # CORS setup
 app.add_middleware(
