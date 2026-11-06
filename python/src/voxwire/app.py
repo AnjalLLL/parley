@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from voxwire import __version__
-from voxwire.api import health, sessions, signaling
+from voxwire.api import health, sessions, signaling, telephony
 from voxwire.core.config import settings
 from voxwire.utils.logger import configure_logging
 
@@ -23,6 +23,7 @@ app.add_middleware(
 app.include_router(signaling.router, tags=["Signaling"])
 app.include_router(sessions.router, prefix="/api", tags=["Sessions"])
 app.include_router(health.router, tags=["Health"])
+app.include_router(telephony.router, tags=["Phone"])
 
 
 @app.on_event("startup")

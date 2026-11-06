@@ -1,3 +1,4 @@
+import secrets
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing import Optional
 
@@ -29,6 +30,24 @@ class Settings(BaseSettings):
     SESSION_CREATE_PER_MINUTE: int = 60
     LOG_FORMAT: str = "text"  # "text" or "json"
 
+    OPENAI_API_KEY: Optional[str] = None
+    OPENAI_REALTIME_MODEL: str = "gpt-realtime"
+    DEFAULT_PROVIDER: Optional[str] = None  # gemini / openai / echo; unset = first provider with a key
+
+    WEBHOOK_URL: str = ""  # default events URL when a session doesn't set webhook_url
+    RECORDINGS_DIR: str = ""  # empty = recording disabled
+    DATA_DIR: str = "data"  # sqlite call log lives here
+
+    # Phone calls (Twilio Media Streams)
+    PUBLIC_URL: str = ""  # https://voice.example.com, reachable by Twilio
+    TWILIO_ACCOUNT_SID: str = ""
+    TWILIO_AUTH_TOKEN: str = ""
+    TWILIO_FROM_NUMBER: str = ""
+    PHONE_SYSTEM_PROMPT: str = "You are a helpful assistant answering a phone call. Keep answers short."
+
+    # TURN: static creds (TURN_USERNAME/CREDENTIAL) or time-limited ones from a shared secret (coturn use-auth-secret)
+    TURN_SECRET: str = ""
+
     @property
     def api_keys(self) -> set[str]:
         return {k.strip() for k in self.VOXWIRE_API_KEYS.split(",") if k.strip()}
@@ -36,3 +55,6 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
 settings = Settings()
+
+# Signs call tokens and webhook bodies. Random per process when unset (dev).
+SECRET = (settings.VOXWIRE_SECRET or secrets.token_hex(32)).encode()

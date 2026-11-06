@@ -32,6 +32,7 @@ server = [
     "protobuf>=6.33.5",
     "pydantic-settings>=2.14.1",
     "uvicorn[standard]>=0.49.0",
+    "websockets>=13",
 ]
 
 [project.scripts]

@@ -34,15 +34,19 @@ async def signaling(websocket: WebSocket, session_id: str):
 
     async def hang_up_at_limit():
         await asyncio.sleep(settings.MAX_CALL_SECONDS)
+        nonlocal reason
+        reason = "max_duration"
         logger.info(f"[{session_id}] max call duration reached")
         await websocket.close(code=4408, reason="max call duration reached")
 
+    reason = "hangup"
     limit_task = asyncio.create_task(hang_up_at_limit())
     try:
         try:
             await pion.create_session(session_id)
         except Exception as e:
             logger.error(f"[{session_id}] SFU unavailable: {e}")
+            reason = "sfu_unavailable"
             await websocket.close(code=1011, reason="media server unavailable")
             return
         while True:
@@ -50,7 +54,7 @@ async def signaling(websocket: WebSocket, session_id: str):
             if msg["type"] == "offer" and pipeline is None:
                 answer_sdp = await pion.process_offer(session_id, msg["sdp"])
                 await websocket.send_json({"type": "answer", "sdp": answer_sdp})
-                pipeline = AudioPipeline(session_id, pion, websocket, system_prompt=session.system_prompt)
+                pipeline = AudioPipeline(session, pion, websocket)
                 asyncio.create_task(pipeline.run())
                 logger.info(f"[{session_id}] audio pipeline started")
             elif msg["type"] == "ice-candidate":
@@ -64,7 +68,8 @@ async def signaling(websocket: WebSocket, session_id: str):
         if pipeline:
             if pipeline.failed:
                 sessions.ai_errors_total += 1
+                reason = "ai_error"
             await pipeline.stop()
         await pion.end_session(session_id)
         await pion.close()
-        sessions.finish(session)
+        sessions.finish(session, reason)

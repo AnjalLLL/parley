@@ -1,5 +1,6 @@
 import asyncio
 
+from voxwire.core.session_manager import Session
 from voxwire.services.audio_pipeline import AudioPipeline
 from voxwire.services.gemini_client import EchoClient
 
@@ -30,7 +31,7 @@ def test_echo_pipeline_round_trip_and_prompt():
     async def run():
         pion = FakePion([b"\x01\x02", b"\x03\x04"])
         ai = RecordingEcho()
-        p = AudioPipeline("s1", pion, ws=None, system_prompt="be brief", ai=ai)
+        p = AudioPipeline(Session("s1", 0, system_prompt="be brief"), pion, ws=None, ai=ai)
         task = asyncio.create_task(p.run())
         for _ in range(100):
             if len(pion.played) == 2:

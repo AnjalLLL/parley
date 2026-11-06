@@ -4,25 +4,33 @@ shortcut: single-process memory store; move to Redis for multi-node (plans phase
 """
 import hashlib
 import hmac
-import secrets
 import time
 import uuid
 from dataclasses import dataclass, field
 from typing import Any, Optional
 
-from voxwire.core.config import settings
+from voxwire.core.config import SECRET, settings
+from voxwire.services import webhooks
 
-_SECRET = (settings.VOXWIRE_SECRET or secrets.token_hex(32)).encode()
 
 
 @dataclass
 class Session:
     id: str
-    system_prompt: Optional[str]
-    voice: Optional[str]
-    model: Optional[str]
-    metadata: dict
     expires_at: float
+    system_prompt: Optional[str] = None
+    voice: Optional[str] = None
+    model: Optional[str] = None
+    provider: Optional[str] = None  # gemini / openai / echo; None = pick from configured keys
+    tools: list = field(default_factory=list)  # [{name, description, parameters}]
+    tool_webhook_url: Optional[str] = None
+    webhook_url: Optional[str] = None
+    record: bool = False
+    metadata: dict = field(default_factory=dict)
+    api_key: str = "dev"
+    channel: str = "webrtc"  # webrtc / phone
+    transcript: list = field(default_factory=list)  # [{role, text, t}]
+    end_reason: Optional[str] = None
     created_at: float = field(default_factory=time.time)
     status: str = "waiting"  # waiting -> active -> ended
     started_at: Optional[float] = None
@@ -40,6 +48,9 @@ class Session:
             "session_id": self.id,
             "status": self.status,
             "duration_seconds": self.duration,
+            "provider": self.provider,
+            "channel": self.channel,
+            "end_reason": self.end_reason,
             "created_at": self.created_at,
             "expires_at": self.expires_at,
             "metadata": self.metadata,
@@ -48,7 +59,7 @@ class Session:
 
 def make_token(session_id: str, expires_at: float) -> str:
     exp = str(int(expires_at))
-    sig = hmac.new(_SECRET, f"{session_id}.{exp}".encode(), hashlib.sha256).hexdigest()
+    sig = hmac.new(SECRET, f"{session_id}.{exp}".encode(), hashlib.sha256).hexdigest()
     return f"{exp}.{sig}"
 
 
@@ -58,7 +69,7 @@ def verify_token(session_id: str, token: Optional[str]) -> bool:
     exp, sig = token.split(".", 1)
     if not exp.isdigit() or int(exp) < time.time():
         return False
-    good = hmac.new(_SECRET, f"{session_id}.{exp}".encode(), hashlib.sha256).hexdigest()
+    good = hmac.new(SECRET, f"{session_id}.{exp}".encode(), hashlib.sha256).hexdigest()
     return hmac.compare_digest(sig, good)
 
 
@@ -70,10 +81,10 @@ class SessionManager:
         self.ai_errors_total = 0
         self.call_seconds_sum = 0.0
 
-    def create(self, system_prompt=None, voice=None, model=None, metadata=None, ttl_seconds=None) -> Session:
+    def create(self, ttl_seconds=None, **fields) -> Session:
         self.sweep()
         ttl = ttl_seconds or settings.SESSION_TTL_SECONDS
-        s = Session(str(uuid.uuid4()), system_prompt, voice, model, metadata or {}, time.time() + ttl)
+        s = Session(str(uuid.uuid4()), time.time() + ttl, **fields)
         self._sessions[s.id] = s
         return s
 
@@ -89,12 +100,28 @@ class SessionManager:
     def start(self, s: Session, ws) -> None:
         s.status, s.started_at, s.ws = "active", time.time(), ws
         self.calls_total += 1
+        webhooks.send_event(s.webhook_url, "call.started", s.public())
 
-    def finish(self, s: Session) -> None:
+    def add_transcript(self, s: Session, role: str, text: str) -> None:
+        """Providers stream text in fragments; merge consecutive fragments from the same speaker."""
+        if s.transcript and s.transcript[-1]["role"] == role:
+            s.transcript[-1]["text"] += text
+        else:
+            t = round(time.time() - (s.started_at or time.time()), 1)
+            s.transcript.append({"role": role, "text": text, "t": t})
+
+    def finish(self, s: Session, reason: str = "hangup") -> None:
+        if s.status == "ended":
+            return
+        s.end_reason = reason
         s.ended_at = time.time()
-        if s.status == "active":
-            self.call_seconds_sum += s.duration
+        was_active = s.status == "active"
         s.status, s.ws = "ended", None
+        if was_active:
+            self.call_seconds_sum += s.duration
+            webhooks.send_event(s.webhook_url, "call.ended", s.public())
+            if s.transcript:
+                webhooks.send_event(s.webhook_url, "transcript.ready", {"session_id": s.id, "transcript": s.transcript})
 
     def sweep(self) -> None:
         """Drop expired unused sessions and ended ones older than an hour."""

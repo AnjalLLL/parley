@@ -1449,6 +1449,7 @@ server = [
     { name = "protobuf" },
     { name = "pydantic-settings" },
     { name = "uvicorn", extra = ["standard"] },
+    { name = "websockets" },
 ]
 
 [package.dev-dependencies]
@@ -1470,6 +1471,7 @@ requires-dist = [
     { name = "protobuf", marker = "extra == 'server'", specifier = ">=6.33.5" },
     { name = "pydantic-settings", marker = "extra == 'server'", specifier = ">=2.14.1" },
     { name = "uvicorn", extras = ["standard"], marker = "extra == 'server'", specifier = ">=0.49.0" },
+    { name = "websockets", marker = "extra == 'server'", specifier = ">=13" },
 ]
 provides-extras = ["server"]
 
