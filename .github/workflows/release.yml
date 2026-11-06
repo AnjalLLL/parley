@@ -11,7 +11,7 @@ jobs:
     defaults: { run: { working-directory: python } }
     steps:
       - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v6
+      - uses: astral-sh/setup-uv@v7
       - name: Tag must match package version
         run: grep -q "^__version__ = \"${GITHUB_REF_NAME#v}\"" src/voxwire/__init__.py
       - run: uv build
