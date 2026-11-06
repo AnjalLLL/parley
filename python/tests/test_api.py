@@ -83,3 +83,13 @@ def test_health_and_metrics(client):
     h = client.get("/api/health").json()
     assert h["status"] == "ok" and "active_calls" in h and "pion_url" not in h
     assert "voxwire_calls_total" in client.get("/metrics").text
+
+
+def test_ws_closes_fast_when_sfu_is_down(client, monkeypatch):
+    monkeypatch.setattr(settings, "PION_GRPC_URL", "127.0.0.1:1")  # nothing listens here
+    monkeypatch.setattr(settings, "SFU_TIMEOUT_SECONDS", 1.0)
+    s = client.post("/api/session", json={}, headers=H).json()
+    start = time.time()
+    assert _ws_close_code(client, f"/ws/signaling/{s['session_id']}?token={s['token']}") == 1011
+    assert time.time() - start < 5
+    assert sessions.get(s["session_id"]).status == "ended"

@@ -39,7 +39,12 @@ async def signaling(websocket: WebSocket, session_id: str):
 
     limit_task = asyncio.create_task(hang_up_at_limit())
     try:
-        await pion.create_session(session_id)
+        try:
+            await pion.create_session(session_id)
+        except Exception as e:
+            logger.error(f"[{session_id}] SFU unavailable: {e}")
+            await websocket.close(code=1011, reason="media server unavailable")
+            return
         while True:
             msg = json.loads(await websocket.receive_text())
             if msg["type"] == "offer" and pipeline is None:

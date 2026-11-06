@@ -6,6 +6,7 @@ class Settings(BaseSettings):
     GEMINI_MODEL: str = "gemini-2.5-flash-native-audio-preview-09-2025"
 
     PION_GRPC_URL: str = "localhost:50051"
+    SFU_TIMEOUT_SECONDS: float = 5.0
 
     ELEVENLABS_API_KEY: Optional[str] = None
     ELEVENLABS_VOICE_ID: str = "21m00Tcm4TlvDq8ikWAM"
