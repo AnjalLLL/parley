@@ -1,0 +1,64 @@
+[project]
+name = "voxwire"
+dynamic = ["version"]
+description = "Self-hostable real-time voice AI calls over WebRTC (Pion SFU + Gemini Live)."
+readme = "README.md"
+requires-python = ">=3.12"
+license = "Apache-2.0"
+license-files = ["LICENSE"]
+authors = [{ name = "Anjal Ghimire" }]
+keywords = ["webrtc", "voice", "ai", "realtime", "gemini", "sfu", "pion", "voice-agent"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Framework :: FastAPI",
+    "Intended Audience :: Developers",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Communications :: Telephony",
+    "Topic :: Multimedia :: Sound/Audio :: Speech",
+    "Typing :: Typed",
+]
+# Base install is the client only (stdlib). The server needs the [server] extra.
+dependencies = []
+
+[project.optional-dependencies]
+server = [
+    "aiohttp>=3.14.0",
+    "fastapi>=0.136.3",
+    "google-genai>=2.8.0",
+    "grpcio>=1.81.0",
+    "protobuf>=6.33.5",
+    "pydantic-settings>=2.14.1",
+    "uvicorn[standard]>=0.49.0",
+]
+
+[project.scripts]
+voxwire = "voxwire.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/AnjalLLL/voxwire"
+Source = "https://github.com/AnjalLLL/voxwire"
+Issues = "https://github.com/AnjalLLL/voxwire/issues"
+Changelog = "https://github.com/AnjalLLL/voxwire/blob/main/CHANGELOG.md"
+
+[dependency-groups]
+dev = ["grpcio-tools>=1.81.0", "python-dotenv>=1.2.2", "pytest>=8", "ruff>=0.6"]
+
+[build-system]
+requires = ["hatchling>=1.27"]
+build-backend = "hatchling.build"
+
+[tool.hatch.version]
+path = "src/voxwire/__init__.py"
+
+[tool.hatch.build.targets.sdist]
+include = ["src", "tests", "README.md", "LICENSE"]
+
+[tool.ruff]
+line-length = 120
+extend-exclude = ["src/voxwire/proto/*_pb2*.py"]
+
+[tool.ruff.lint]
+select = ["E", "F"]

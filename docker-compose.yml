@@ -1,33 +1,32 @@
+# Local development: builds from source. For prebuilt images see deploy/docker-compose.yml.
 services:
-  fastapi:
-    build: ./fastapi_service
+  server:
+    build: ./python
     ports:
       - "8000:8000"
     env_file: .env
     environment:
-      - PION_GRPC_URL=pion:50051
+      - PION_GRPC_URL=sfu:50051
     depends_on:
-      - pion
+      - sfu
     volumes:
-      - ./fastapi_service:/app
-      - /app/.venv  # keep the container venv; a host .venv has macOS binaries
-    command: uv run uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+      - ./python/src:/app/src
+    command: uv run --no-sync voxwire serve --host 0.0.0.0 --port 8000 --reload
 
-  pion:
-    build: ./pion_service
+  sfu:
+    build: ./sfu
     ports:
       - "50051:50051"    # gRPC
-      - "8080:8080"      # WebRTC signaling fallback (optional)
       - "5000-5100:5000-5100/udp"  # RTP media
     environment:
       - PION_LOG_INFO=*
       - PION_PUBLIC_IP=${PION_PUBLIC_IP:-127.0.0.1}
 
-  frontend:
+  web:
     image: nginx:alpine
     ports:
       - "3000:80"
     volumes:
-      - ./landing:/usr/share/nginx/html:ro
+      - ./web:/usr/share/nginx/html:ro
     depends_on:
-      - fastapi
+      - server

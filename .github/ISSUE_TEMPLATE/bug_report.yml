@@ -1,0 +1,14 @@
+name: Bug report
+description: Something doesn't work
+labels: [bug]
+body:
+  - type: textarea
+    attributes: { label: What happened, description: "What you expected, what you saw, and any logs" }
+    validations: { required: true }
+  - type: textarea
+    attributes: { label: Steps to reproduce }
+    validations: { required: true }
+  - type: input
+    attributes: { label: Voxwire version, placeholder: "0.1.0 / commit sha" }
+  - type: input
+    attributes: { label: Environment, placeholder: "OS, browser, Docker or source" }

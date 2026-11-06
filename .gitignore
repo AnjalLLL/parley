@@ -18,8 +18,8 @@ env/
 .python-version
 
 # Go
-pion_service/pion_service
-pion_service/bin/
+sfu/sfu-bin
+sfu/bin/
 
 # IDEs
 .vscode/
@@ -29,3 +29,10 @@ pion_service/bin/
 .DS_Store
 Thumbs.db
 .impeccable/
+
+# Build artifacts
+dist/
+build/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/

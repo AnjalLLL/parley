@@ -1,73 +1,94 @@
-# Parley
+# Voxwire
 
-Open-source, self-hostable real-time voice AI calls. Parley provides a complete pipeline for AI-powered video/audio calls using FastAPI, Pion SFU, and the Gemini Live API.
+[![CI](https://github.com/AnjalLLL/voxwire/actions/workflows/ci.yml/badge.svg)](https://github.com/AnjalLLL/voxwire/actions/workflows/ci.yml)
+[![PyPI](https://img.shields.io/pypi/v/voxwire)](https://pypi.org/project/voxwire/)
+[![License](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE)
+
+Open-source, self-hostable real-time voice AI calls over WebRTC. A browser joins a call, and Voxwire streams its audio through a Pion SFU to the Gemini Live API and back.
+
+You can use it in three ways:
+
+| You want to… | Use |
+|---|---|
+| Run the whole stack yourself | Docker images: [`deploy/docker-compose.yml`](deploy/docker-compose.yml) |
+| Create calls from your own backend | `pip install voxwire`, then `VoxwireClient` |
+| Hack on or embed the server | `pip install "voxwire[server]"`, then `voxwire serve` |
 
 ## Architecture
 
-- **FastAPI (Python):** Handles signaling (WebSockets), session management, and orchestration between the SFU and Gemini.
-- **Pion SFU (Go):** Manages WebRTC peer connections, handles RTP media, and performs audio transcoding/resampling.
-- **Gemini Live API:** Provides real-time AI conversation with native audio streaming.
-
-## Prerequisites
-
-- Python 3.11+
-- Go 1.22+
-- `uv` (Python package manager)
-- Docker & Docker Compose
-- Google Gemini API Key
-
-## Setup
-
-1. **Environment Variables:**
-   Copy `.env.example` to `.env` and add your `GEMINI_API_KEY`.
-   ```bash
-   cp .env.example .env
-   ```
-
-2. **Python Dependencies:**
-   ```bash
-   cd fastapi_service
-   uv sync
-   ```
-
-3. **Go Dependencies:**
-   ```bash
-   cd pion_service
-   go mod tidy
-   ```
-
-4. **Generate gRPC Stubs:**
-   ```bash
-   # Python
-   cd fastapi_service
-   uv run python -m grpc_tools.protoc -I../pion_service/grpc/proto --python_out=./proto --grpc_python_out=./proto ../pion_service/grpc/proto/sfu.proto
-   ```
-
-## Running with Docker (Recommended)
-
-Start the entire stack:
-```bash
-docker-compose up --build
+```
+Browser ──WebRTC/Opus──▶ SFU (Go, Pion) ──gRPC PCM 16k──▶ Server (Python) ──▶ Gemini Live
+   ▲                         │                                 │
+   └──── WebSocket signaling ┴─────────────────────────────────┘
 ```
 
-- **Frontend:** http://localhost:3000
-- **FastAPI:** http://localhost:8000
-- **Pion gRPC:** localhost:50051
+| Directory | What it is | Published as |
+|---|---|---|
+| [`python/`](python) | Signaling server, audio pipeline, Python client + CLI | PyPI `voxwire`, image `ghcr.io/anjallll/voxwire-server` |
+| [`sfu/`](sfu) | Pion SFU: WebRTC peers, Opus decode/encode, resampling | image `ghcr.io/anjallll/voxwire-sfu` |
+| [`web/`](web) | Static landing page and browser call demo | static site |
+| [`deploy/`](deploy) | Production compose file using the published images | n/a |
 
-## Testing
+## Quickstart (self-host)
 
-1. **Gemini Connectivity:**
-   ```bash
-   cd fastapi_service
-   uv run python ../scripts/test_gemini.py
-   ```
+```bash
+curl -O https://raw.githubusercontent.com/AnjalLLL/voxwire/main/deploy/docker-compose.yml
+cat > .env <<ENV
+GEMINI_API_KEY=your-key        # leave empty for echo mode
+PION_PUBLIC_IP=203.0.113.10    # your server's public IP
+ENV
+docker compose up -d
+```
 
-2. **WebRTC Call:**
-   Open http://localhost:3000 in your browser, grant microphone access, and click "Start Call".
+## Use from your app
 
-## Audio Pipeline
+```python
+from voxwire import VoxwireClient
 
-The service implements a strict audio pipeline for Gemini compatibility:
-- Browser (Opus/RTP) → Pion (PCM 48kHz) → Resample (16kHz) → FastAPI → Gemini (PCM 16kHz)
-- Gemini (PCM 24kHz) → FastAPI → Pion → Resample (48kHz) → Opus/RTP → Browser
-- Need gemini api for test.
+vx = VoxwireClient("https://voice.example.com")
+session = vx.create_session(system_prompt="You are a friendly support agent.")
+# Give session["signaling_url"] to the browser; it sends its WebRTC offer there.
+```
+
+The signaling protocol is JSON over WebSocket: `{"type": "offer", "sdp": ...}`, `{"type": "ice-candidate", "candidate": ...}`, and the server replies `{"type": "answer", "sdp": ...}`. See [`web/index.html`](web/index.html) for a working browser client.
+
+## Develop from source
+
+Prerequisites: Docker, and for running outside Docker, Python 3.12+ with [uv](https://docs.astral.sh/uv/) and Go 1.24+ with libopus.
+
+```bash
+cp .env.example .env
+docker compose up --build      # web :3000, server :8000, sfu gRPC :50051
+```
+
+Run the tests:
+
+```bash
+cd python && uv sync --extra server && uv run pytest
+cd sfu && go test ./...
+```
+
+Regenerate the gRPC stubs after you edit `sfu/grpc/proto/sfu.proto`:
+
+```bash
+cd python && uv run python -m grpc_tools.protoc -I../sfu/grpc/proto \
+  --python_out=src/voxwire/proto --grpc_python_out=src/voxwire/proto ../sfu/grpc/proto/sfu.proto
+# then change `import sfu_pb2` to `from . import sfu_pb2` in sfu_pb2_grpc.py
+```
+
+Check Gemini connectivity with `cd python && uv run python ../scripts/test_gemini.py`.
+
+## Audio pipeline
+
+- Browser (Opus/RTP) → SFU (PCM 48 kHz) → resample to 16 kHz → server → Gemini
+- Gemini (PCM 24 kHz) → server → SFU → resample to 48 kHz → Opus/RTP → browser
+
+If you leave `GEMINI_API_KEY` empty, the server runs in echo mode and plays your own voice back to you, which helps you test without an API key.
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md), and follow our [Code of Conduct](CODE_OF_CONDUCT.md). To report a security issue, see [SECURITY.md](SECURITY.md).
+
+## License
+
+[Apache-2.0](LICENSE)

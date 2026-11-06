@@ -1,0 +1,21 @@
+# Production / self-host: runs the published images, no source checkout needed.
+#   curl -O https://raw.githubusercontent.com/AnjalLLL/voxwire/main/deploy/docker-compose.yml
+#   echo "GEMINI_API_KEY=..." > .env && echo "PION_PUBLIC_IP=<your public ip>" >> .env
+#   docker compose up -d
+services:
+  server:
+    image: ghcr.io/anjallll/voxwire-server:${VOXWIRE_VERSION:-latest}
+    restart: unless-stopped
+    ports: ["8000:8000"]
+    env_file: .env
+    environment:
+      - PION_GRPC_URL=sfu:50051
+    depends_on: [sfu]
+
+  sfu:
+    image: ghcr.io/anjallll/voxwire-sfu:${VOXWIRE_VERSION:-latest}
+    restart: unless-stopped
+    ports:
+      - "5000-5100:5000-5100/udp"
+    environment:
+      - PION_PUBLIC_IP=${PION_PUBLIC_IP:?set PION_PUBLIC_IP in .env}
