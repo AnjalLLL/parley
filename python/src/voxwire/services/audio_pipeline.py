@@ -7,16 +7,21 @@ logger = logging.getLogger(__name__)
 
 
 class AudioPipeline:
-    def __init__(self, session_id: str, pion: PionClient, ws):
+    def __init__(self, session_id: str, pion: PionClient, ws, system_prompt: str | None = None, ai=None):
         self.session_id = session_id
+        self.system_prompt = system_prompt
+        self.failed = False
         self.pion = pion
         self.ws = ws
-        self.ai = make_ai_client()
+        self.ai = ai or make_ai_client()
         self._tasks = []
 
     async def run(self):
         try:
-            await self.ai.connect()
+            if self.system_prompt:
+                await self.ai.connect(system_prompt=self.system_prompt)
+            else:
+                await self.ai.connect()
             self._tasks = [
                 asyncio.create_task(self._user_audio_loop()),
                 asyncio.create_task(self._ai_audio_loop()),
@@ -25,7 +30,8 @@ class AudioPipeline:
         except asyncio.CancelledError:
             pass
         except Exception as e:
-            logger.error(f"Audio pipeline failed: {e}")
+            self.failed = True
+            logger.error(f"[{self.session_id}] audio pipeline failed: {e}")
             await self.ws.close(code=1011)
 
     async def _user_audio_loop(self):

@@ -1,6 +1,6 @@
 # Production / self-host: runs the published images, no source checkout needed.
 #   curl -O https://raw.githubusercontent.com/AnjalLLL/voxwire/main/deploy/docker-compose.yml
-#   echo "GEMINI_API_KEY=..." > .env && echo "PION_PUBLIC_IP=<your public ip>" >> .env
+#   printf "GEMINI_API_KEY=...\nPION_PUBLIC_IP=<public ip>\nVOXWIRE_API_KEYS=<key>\nVOXWIRE_SECRET=$(openssl rand -hex 32)\n" > .env
 #   docker compose up -d
 services:
   server:

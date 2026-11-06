@@ -16,6 +16,22 @@ class Settings(BaseSettings):
     TURN_USERNAME: str = ""
     TURN_CREDENTIAL: str = ""
 
+    # Comma-separated API keys for the REST API. Empty = dev mode (no auth, loud warning).
+    VOXWIRE_API_KEYS: str = ""
+    # Signs per-call tokens. Empty = random per process (tokens die on restart); set it in production.
+    VOXWIRE_SECRET: str = ""
+    VOXWIRE_CORS_ORIGINS: str = "*"
+
+    MAX_CONCURRENT_CALLS: int = 20
+    MAX_CALL_SECONDS: int = 1800
+    SESSION_TTL_SECONDS: int = 600
+    SESSION_CREATE_PER_MINUTE: int = 60
+    LOG_FORMAT: str = "text"  # "text" or "json"
+
+    @property
+    def api_keys(self) -> set[str]:
+        return {k.strip() for k in self.VOXWIRE_API_KEYS.split(",") if k.strip()}
+
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
 settings = Settings()

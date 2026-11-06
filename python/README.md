@@ -12,10 +12,11 @@ pip install "voxwire[server]"  # plus the signaling/agent server
 ```python
 from voxwire import VoxwireClient
 
-vx = VoxwireClient("http://localhost:8000")
+vx = VoxwireClient("http://localhost:8000", api_key="your-key")
 print(vx.health())
-session = vx.create_session(system_prompt="You are a helpful assistant.")
-print(session["signaling_url"])   # ws://localhost:8000/ws/signaling/<id>
+session = vx.create_session(system_prompt="You are a helpful assistant.", metadata={"user": 42})
+print(session["signaling_url"])   # ws://localhost:8000/ws/signaling/<id>?token=...
+print(vx.get_session(session["session_id"])["status"])
 vx.end_session(session["session_id"])
 ```
 
@@ -27,6 +28,6 @@ voxwire health --url http://localhost:8000
 voxwire session --prompt "Be brief."
 ```
 
-The server reads its settings from environment variables or a `.env` file: `GEMINI_API_KEY`, `GEMINI_MODEL`, `PION_GRPC_URL`, `STUN_SERVER`, `TURN_*`, `ELEVENLABS_*`. It needs the Voxwire SFU running next to it. The simplest way to get both is the [Docker deployment](https://github.com/AnjalLLL/voxwire#quickstart-self-host).
+The server reads its settings from environment variables or a `.env` file: `GEMINI_API_KEY`, `GEMINI_MODEL`, `PION_GRPC_URL`, `VOXWIRE_API_KEYS`, `VOXWIRE_SECRET`, `MAX_CONCURRENT_CALLS`, `MAX_CALL_SECONDS`, `STUN_SERVER`, `TURN_*`, `ELEVENLABS_*`. It needs the Voxwire SFU running next to it. The simplest way to get both is the [Docker deployment](https://github.com/AnjalLLL/voxwire#quickstart-self-host).
 
 License: Apache-2.0

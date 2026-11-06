@@ -12,5 +12,6 @@ Include the affected version, steps to reproduce, and the impact. You should hea
 
 ## Deployment notes
 
-- The server has no built-in authentication yet. Put it behind your own auth or a reverse proxy before exposing it to the internet.
+- Always set `VOXWIRE_API_KEYS` and `VOXWIRE_SECRET` before exposing the server. Without keys it runs in open dev mode.
+- Set `VOXWIRE_CORS_ORIGINS` to your own domains, and serve the server over HTTPS/WSS (for example behind Caddy).
 - Keep `GEMINI_API_KEY` and any TURN credentials in `.env` or a secret store. Never commit them.
