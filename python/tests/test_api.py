@@ -93,3 +93,32 @@ def test_ws_closes_fast_when_sfu_is_down(client, monkeypatch):
     assert _ws_close_code(client, f"/ws/signaling/{s['session_id']}?token={s['token']}") == 1011
     assert time.time() - start < 5
     assert sessions.get(s["session_id"]).status == "ended"
+
+
+def test_lifespan_runs_startup_and_shutdown(monkeypatch, caplog):
+    monkeypatch.setattr(settings, "VOXWIRE_API_KEYS", "")
+    monkeypatch.setattr(settings, "VOXWIRE_SECRET", "")
+    with caplog.at_level("INFO", logger="voxwire.app"):
+        with TestClient(app) as c:
+            # startup has run once the client context is entered
+            assert any("Starting Voxwire" in m for m in caplog.messages)
+            assert any("API is OPEN" in m for m in caplog.messages)
+            assert any("VOXWIRE_SECRET is empty" in m for m in caplog.messages)
+            assert c.get("/api/health").status_code == 200
+    # leaving the context runs the shutdown half of the lifespan without error
+
+
+def test_lifespan_is_quiet_when_configured(monkeypatch, caplog):
+    monkeypatch.setattr(settings, "VOXWIRE_API_KEYS", "k1")
+    monkeypatch.setattr(settings, "VOXWIRE_SECRET", "s3cret")
+    with caplog.at_level("INFO", logger="voxwire.app"):
+        with TestClient(app):
+            pass
+    assert any("Starting Voxwire" in m for m in caplog.messages)
+    assert not [r for r in caplog.records if r.levelname == "WARNING"]
+
+
+def test_no_deprecated_on_event_handlers():
+    assert app.router.on_startup == []
+    assert app.router.on_shutdown == []
+
