@@ -29,6 +29,7 @@ All notable changes are recorded here. The format follows [Keep a Changelog](htt
 ### Changed
 - **Breaking:** the signaling WebSocket now requires a session created through `POST /api/session` and its `?token=`. Random session IDs are rejected.
 - `/api/health` no longer exposes the SFU address. It now returns `version` and `active_calls`.
+- The FastAPI `on_event("startup")` hook is replaced by a `lifespan` handler, which removes the deprecation warning. Startup behaviour is unchanged.
 
 ## [0.1.0] - 2026-11-06
 
