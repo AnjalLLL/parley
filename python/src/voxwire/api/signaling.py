@@ -40,10 +40,12 @@ async def signaling(websocket: WebSocket, session_id: str):
         await websocket.close(code=4408, reason="max call duration reached")
 
     reason = "hangup"
+    sfu_ready = False
     limit_task = asyncio.create_task(hang_up_at_limit())
     try:
         try:
             await pion.create_session(session_id)
+            sfu_ready = True
         except Exception as e:
             logger.error(f"[{session_id}] SFU unavailable: {e}")
             reason = "sfu_unavailable"
@@ -70,6 +72,7 @@ async def signaling(websocket: WebSocket, session_id: str):
                 sessions.ai_errors_total += 1
                 reason = "ai_error"
             await pipeline.stop()
-        await pion.end_session(session_id)
+        if sfu_ready:
+            await pion.end_session(session_id)
         await pion.close()
         sessions.finish(session, reason)
