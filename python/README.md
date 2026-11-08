@@ -26,6 +26,8 @@ vx.end_session(session["session_id"])
 voxwire serve --port 8000              # needs [server] and a running SFU
 voxwire health --url http://localhost:8000
 voxwire session --prompt "Be brief."
+voxwire calls --limit 20              # active and recent calls
+voxwire usage --days 7                # call and minute totals
 ```
 
 The server reads its settings from environment variables or a `.env` file: `GEMINI_API_KEY`, `GEMINI_MODEL`, `PION_GRPC_URL`, `VOXWIRE_API_KEYS`, `VOXWIRE_SECRET`, `MAX_CONCURRENT_CALLS`, `MAX_CALL_SECONDS`, `STUN_SERVER`, `TURN_*`, `ELEVENLABS_*`. It needs the Voxwire SFU running next to it. The simplest way to get both is the [Docker deployment](https://github.com/AnjalLLL/voxwire#quickstart-self-host).

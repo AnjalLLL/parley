@@ -12,6 +12,7 @@ All notable changes are recorded here. The format follows [Keep a Changelog](htt
 - `SFU_TIMEOUT_SECONDS`: calls to the SFU time out, and the WebSocket closes with code 1011 when the SFU is unreachable, instead of hanging.
 - Prometheus `/metrics`, JSON logs (`LOG_FORMAT=json`), tokens redacted from logs, and CORS origins setting (`VOXWIRE_CORS_ORIGINS`).
 - `VoxwireClient.get_session()`, and `create_session(**options)`.
+- `voxwire calls` and `voxwire usage` CLI commands, backed by new `VoxwireClient.list_sessions()` and `usage()` methods.
 - Tests for the API, auth, the pipeline (echo) and the SFU session lifecycle.
 
 - Providers: choose `gemini`, `openai` (OpenAI Realtime) or `echo` per session. Also `voice` and `model`.

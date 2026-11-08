@@ -51,6 +51,14 @@ class VoxwireClient:
     def end_session(self, session_id: str) -> dict:
         return self._request("DELETE", f"/api/session/{session_id}")
 
+    def list_sessions(self, limit: int = 50) -> dict:
+        """Calls in progress (`active`) and the latest finished ones (`recent`)."""
+        return self._request("GET", f"/api/sessions?limit={int(limit)}")
+
+    def usage(self, days: int = 30) -> dict:
+        """Call and minute totals for the last `days` days, with a per-day breakdown."""
+        return self._request("GET", f"/api/usage?days={int(days)}")
+
     def signaling_url(self, session_id: str, token: Optional[str] = None) -> str:
         scheme, _, host = self.base_url.partition("://")
         ws = ("wss://" if scheme == "https" else "ws://") + host
